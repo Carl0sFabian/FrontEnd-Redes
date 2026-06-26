@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edubridge - Panel de Control Educativo</title>
+    <meta name="description"
+        content="Dashboard premium de pruebas visuales para el backend de Edubridge. Gestión de usuarios, cursos, traducción de materiales y RFID.">
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon">E</div>
+            <span class="logo-text">Edubridge</span>
+        </div>
+        <nav class="menu-list">
+            <a class="menu-item active" data-view="view-dashboard">
+                <i class="fa-solid fa-chart-pie"></i> Inicio
+            </a>
+            <a class="menu-item" data-view="view-users">
+                <i class="fa-solid fa-users"></i> Usuarios
+            </a>
+            <a class="menu-item" data-view="view-courses">
+                <i class="fa-solid fa-graduation-cap"></i> Cursos
+            </a>
+            <a class="menu-item" data-view="view-materials">
+                <i class="fa-solid fa-book-open"></i> Materiales (Traductor)
+            </a>
+            <a class="menu-item" data-view="view-qr-door">
+                <i class="fa-solid fa-door-open"></i> Lector QR (Puerta)
+            </a>
+            <a class="menu-item" data-view="view-attendance">
+                <i class="fa-solid fa-id-card"></i> Asistencias (RFID)
+            </a>
+            <a class="menu-item" data-view="view-performance">
+                <i class="fa-solid fa-chart-line"></i> Rendimiento
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <p>Edubridge Admin v1.0</p>
+            <p>&copy; 2026</p>
+        </div>
+    </aside>
+
+    
+    <main class="main-content">
+        <header>
+            <div>
+                <h1 id="view-title">Inicio</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Bienvenido al Panel de
+                    Control Integrado.</p>
+            </div>
+
+            
+            <div class="api-config-bar">
+                <i class="fa-solid fa-server" style="color: var(--primary-color);"></i>
+                <input type="text" id="backend-url" placeholder="https://backend-redes-kbr6.onrender.com"
+                    value="https://backend-redes-kbr6.onrender.com">
+                <button id="save-config-btn">Guardar API</button>
+            </div>
+        </header>
+
+        
+        <section id="view-dashboard" class="app-view active">
+            
+            <div class="dashboard-summary">
+                <div class="summary-card">
+                    <div class="summary-icon blue"><i class="fa-solid fa-user-graduate"></i></div>
+                    <div class="summary-details">
+                        <h3>Total Usuarios</h3>
+                        <p id="count-users">-</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon purple"><i class="fa-solid fa-book"></i></div>
+                    <div class="summary-details">
+                        <h3>Cursos Activos</h3>
+                        <p id="count-courses">-</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon green"><i class="fa-solid fa-folder-open"></i></div>
+                    <div class="summary-details">
+                        <h3>Materiales en Drive</h3>
+                        <p id="count-materials">-</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon orange"><i class="fa-solid fa-fingerprint"></i></div>
+                    <div class="summary-details">
+                        <h3>Asistencias RFID</h3>
+                        <p id="count-attendance">-</p>
+                    </div>
+                </div>
+            </div>
+
+            
+            <!-- Sección de Gráficos del Dashboard -->
+            <div class="dashboard-charts">
+                <div class="chart-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-chart-pie" style="color: #3b82f6; margin-right: 0.5rem;"></i> Distribución de Usuarios</h2>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:240px; width:100%">
+                        <canvas id="chart-users-distribution"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-building-user" style="color: #a855f7; margin-right: 0.5rem;"></i> Asistencias por Sede</h2>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:240px; width:100%">
+                        <canvas id="chart-attendance-sedes"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-panel full-width-chart">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-book-open-reader" style="color: #10b981; margin-right: 0.5rem;"></i> Materiales por Curso</h2>
+                    </div>
+                    <div class="chart-container" style="position: relative; height:240px; width:100%">
+                        <canvas id="chart-materials-courses"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+        <section id="view-users" class="app-view">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Listado de Usuarios</h2>
+                    <button class="btn btn-primary btn-sm" id="btn-open-user-modal">
+                        <i class="fa-solid fa-user-plus"></i> Registrar Usuario
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="table-users">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Código</th>
+                                <th>Nombre Completo</th>
+                                <th>Correo Electrónico</th>
+                                <th>Tipo de Cuenta</th>
+                                <th>Cursos Matriculados</th>
+                                <th>Última Ubicación</th>
+                                <th>Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-users">
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        
+        <section id="view-courses" class="app-view">
+            <div class="grid-two-columns">
+                
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h2>Registrar Nuevo Curso</h2>
+                    </div>
+                    <form id="form-create-course">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="course-name">Nombre del Curso</label>
+                                <input type="text" id="course-name" required placeholder="Ej: Redes y Conectividad I">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-category">Categoría</label>
+                                <input type="text" id="course-category" required placeholder="Ej: Ingeniería, Ciencias">
+                            </div>
+                            <div class="form-group">
+                                <label for="course-teacher">Docente Asignado</label>
+                                <select id="course-teacher" required>
+                                    <option value="">Selecciona un docente...</option>
+                                    
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="course-description">Descripción</label>
+                                <textarea id="course-description" rows="2"
+                                    placeholder="Breve descripción del curso..."></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="course-topics">Temas (Separados por comas)</label>
+                                <input type="text" id="course-topics"
+                                    placeholder="Ej: Introducción, Capa Física, Protocolos">
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar
+                                Curso</button>
+                        </div>
+                    </form>
+                </div>
+
+                
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h2>Inscribir Estudiante en Curso</h2>
+                    </div>
+                    <form id="form-enroll-student">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="enroll-student-id">Estudiante</label>
+                                <select id="enroll-student-id" required>
+                                    <option value="">Selecciona un estudiante...</option>
+                                    
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="enroll-course-id">Curso</label>
+                                <select id="enroll-course-id" required>
+                                    <option value="">Selecciona un curso...</option>
+                                    
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="enroll-start">Fecha de Inicio</label>
+                                <input type="date" id="enroll-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="enroll-end">Fecha de Cierre</label>
+                                <input type="date" id="enroll-end" required>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Realizar
+                                Inscripción</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Cursos Registrados</h2>
+                </div>
+                <div class="table-container">
+                    <table id="table-courses">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Curso</th>
+                                <th>Categoría</th>
+                                <th>Descripción</th>
+                                <th>Temas</th>
+                                <th>Docente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-courses">
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        
+        <section id="view-materials" class="app-view">
+            <div class="grid-two-columns">
+                
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h2>Subir Material Académico</h2>
+                    </div>
+                    <p style="color:var(--text-muted); font-size: 0.9rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-color)"></i>
+                        <strong>Traductor Integrado:</strong> Si subes un archivo en inglés (.txt o .pdf), el sistema lo
+                        identificará, creará una versión traducida al español, y guardará ambos documentos en Google
+                        Drive.
+                    </p>
+                    <form id="form-upload-material" enctype="multipart/form-data">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="material-course">Asociar al Curso</label>
+                                <select id="material-course" required>
+                                    <option value="">Selecciona un curso...</option>
+                                    
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="material-title">Título del Material</label>
+                                <input type="text" id="material-title" required
+                                    placeholder="Ej: Lectura 1: Introducción">
+                            </div>
+                            <div class="form-group">
+                                <label for="material-type">Tipo de Recurso</label>
+                                <select id="material-type" required>
+                                    <option value="Lectura">Lectura</option>
+                                    <option value="PDF">PDF de Diapositivas</option>
+                                    <option value="Práctica">Práctica Dirigida</option>
+                                    <option value="Otro">Otro Recurso</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="material-file">Archivo (.pdf, .txt)</label>
+                                <input type="file" id="material-file" required accept=".pdf,.txt">
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                            <button type="submit" class="btn btn-primary" id="btn-submit-material">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Subir y Procesar
+                            </button>
+                            <div id="material-upload-status"
+                                style="display:none; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                                <div class="loading-spinner"></div>
+                                <span>Subiendo y traduciendo en Google Drive...</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                
+                <div class="glass-panel" style="justify-content: center;">
+                    <div style="text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+                        <i class="fa-brands fa-google-drive"
+                            style="font-size: 4rem; color: #34a853; filter: drop-shadow(0 0 10px rgba(52, 168, 83, 0.3));"></i>
+                        <h3>Google Drive Storage</h3>
+                        <p style="color:var(--text-muted); font-size: 0.9rem; line-height: 1.4;">
+                            Todos los materiales son almacenados en la carpeta configurada en Google Drive. El backend
+                            aplica permisos públicos automáticos para asegurar que los estudiantes puedan visualizarlos
+                            o descargarlos directamente a través de los enlaces generados.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Materiales de Estudio</h2>
+                </div>
+                <div class="table-container">
+                    <table id="table-materials">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Curso</th>
+                                <th>Título</th>
+                                <th>Tipo</th>
+                                <th>Fecha Publicación</th>
+                                <th>Enlaces Google Drive</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-materials">
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-attendance" class="app-view">
+            <div class="grid-two-columns">
+                <!-- Panel de historial de asistencia -->
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h2>Filtros e Historial RFID</h2>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="filter-type">Filtrar por</label>
+                            <select id="filter-type">
+                                <option value="all">Todas las asistencias</option>
+                                <option value="user">Por ID Estudiante</option>
+                                <option value="sede">Por Sede</option>
+                                <option value="state">Por Estado</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="filter-value-group">
+                            <label for="filter-value" id="filter-value-label">Valor del Filtro</label>
+                            <input type="text" id="filter-value" placeholder="Ingresa el valor...">
+                            <select id="filter-value-select" style="display: none;"></select>
+                        </div>
+                        <div class="form-group" style="justify-content: flex-end;">
+                            <button class="btn btn-secondary" id="btn-apply-filter">
+                                <i class="fa-solid fa-filter"></i> Aplicar Filtro
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="table-attendance">
+                            <thead>
+                                <tr>
+                                    <th>ID Registro</th>
+                                    <th>Estudiante</th>
+                                    <th>Fecha & Hora</th>
+                                    <th>Sede</th>
+                                    <th>Lector RFID</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-attendance">
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Panel de simulador de RFID -->
+                <div class="glass-panel" style="align-self: start;">
+                    <div class="panel-header">
+                        <h2>Simulador de Lector RFID</h2>
+                    </div>
+                    <form id="form-rfid-simulate">
+                        <div class="form-grid" style="grid-template-columns: 1fr;">
+                            <div class="form-group">
+                                <label for="rfid-sim-student">Estudiante / Usuario</label>
+                                <select id="rfid-sim-student" required>
+                                    <option value="">Cargando estudiantes...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rfid-sim-sede">Sede del Dispositivo</label>
+                                <select id="rfid-sim-sede" required>
+                                    <option value="San Miguel">San Miguel</option>
+                                    <option value="Monterrico">Monterrico</option>
+                                    <option value="San Isidro">San Isidro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rfid-sim-state">Estado de la Asistencia</label>
+                                <select id="rfid-sim-state" required>
+                                    <option value="Presente">Presente</option>
+                                    <option value="Tardanza">Tardanza</option>
+                                    <option value="Falta">Falta</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rfid-sim-device">ID Lector RFID (Dispositivo)</label>
+                                <input type="text" id="rfid-sim-device" required value="RFID-LECTOR-WEB-SIM" placeholder="Ej: RFID-LECTOR-WEB-SIM">
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;" id="btn-submit-rfid">
+                                <i class="fa-solid fa-id-card"></i> Simular Lectura de Tarjeta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-performance" class="app-view">
+            
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Registrar Rendimiento Académico</h2>
+                </div>
+                <form id="form-performance">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="perf-student">Estudiante</label>
+                            <select id="perf-student" required>
+                                <option value="">Selecciona...</option>
+                                
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="perf-course">Curso</label>
+                            <select id="perf-course" required>
+                                <option value="">Selecciona...</option>
+                                
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="perf-attendances">Total Asistencias</label>
+                            <input type="number" id="perf-attendances" min="0" required placeholder="Ej: 14">
+                        </div>
+                        <div class="form-group">
+                            <label for="perf-absences">Total Faltas</label>
+                            <input type="number" id="perf-absences" min="0" required placeholder="Ej: 2">
+                        </div>
+                        <div class="form-group">
+                            <label for="perf-score">Nota Final (0 - 20)</label>
+                            <input type="number" id="perf-score" min="0" max="20" step="0.1" required
+                                placeholder="Ej: 16.5">
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem;">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-square-poll-vertical"></i>
+                            Registrar Reporte</button>
+                    </div>
+                </form>
+            </div>
+
+            
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Consolidado Escolar</h2>
+                </div>
+                <div class="table-container">
+                    <table id="table-performance">
+                        <thead>
+                            <tr>
+                                <th>Estudiante</th>
+                                <th>Curso</th>
+                                <th>Asistencias</th>
+                                <th>Faltas</th>
+                                <th>Nota Final</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-performance">
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        
+        <section id="view-qr-door" class="app-view">
+            <div class="grid-two-columns">
+                
+                <div class="glass-panel">
+                    <div class="panel-header">
+                        <h2>Escáner de Credenciales QR</h2>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="door-sede">Sede de Acceso</label>
+                            <select id="door-sede">
+                                <option value="San Miguel">San Miguel</option>
+                                <option value="Monterrico">Monterrico</option>
+                                <option value="San Isidro">San Isidro</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                    <div style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); background: black; position: relative;">
+                        <div id="qr-reader" style="width: 100%; min-height: 250px;"></div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="btn-toggle-scanner">
+                            <i class="fa-solid fa-camera"></i> Iniciar Escáner
+                        </button>
+                    </div>
+                </div>
+
+                
+                <div class="glass-panel" style="justify-content: center; align-items: center; min-height: 480px;">
+                    <div id="door-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                        <!-- Marco de la puerta 3D -->
+                        <div class="door-frame">
+                            <!-- Fondo detrás de la puerta -->
+                            <div class="door-background" id="door-bg">
+                                <div class="welcome-badge" id="welcome-badge">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span id="welcome-badge-text">PRESENTE</span>
+                                </div>
+                            </div>
+                            <!-- Panel de la puerta -->
+                            <div class="door-panel" id="door-panel">
+                                <!-- Ventana de la puerta -->
+                                <div class="door-window">
+                                    <i class="fa-solid fa-graduation-cap" style="font-size: 2.5rem; color: rgba(255,255,255,0.15);"></i>
+                                </div>
+                                <!-- Cerradura y Candado -->
+                                <div class="door-lock-container" id="door-lock-container">
+                                    <i id="door-lock-icon" class="fa-solid fa-lock"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información del Estado de Acceso -->
+                        <div id="door-status-info" style="text-align: center; margin-top: 1rem; width: 100%; max-width: 320px;">
+                            <h2 id="door-status-title" style="font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em; color: var(--text-main);">PUERTA CERRADA</h2>
+                            <p id="door-status-desc" style="font-size: 0.85rem; color: var(--text-muted);">Muestra tu código QR al lector para ingresar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>Accesos Registrados (Hoy)</h2>
+                </div>
+                <div class="table-container">
+                    <table id="table-qr-access">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Estudiante / Usuario</th>
+                                <th>Código</th>
+                                <th>Sede</th>
+                                <th>Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-qr-access">
+                            <tr><td colspan="5" class="empty-state"><i class="fa-solid fa-door-closed"></i><p>Esperando primer ingreso...</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    
+    <div class="modal-overlay" id="user-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Registrar Nuevo Usuario</h3>
+                <button class="modal-close" id="btn-close-user-modal">&times;</button>
+            </div>
+            <form id="form-create-user">
+                <div class="form-grid" style="grid-template-columns: 1fr;">
+                    <div class="form-group">
+                        <label for="user-code">Código Único (DNI/Estudiantil)</label>
+                        <input type="text" id="user-code" required placeholder="Ej: E7482910">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-name">Nombre Completo</label>
+                        <input type="text" id="user-name" required placeholder="Ej: Carlos Mendoza">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-email">Correo Electrónico</label>
+                        <input type="email" id="user-email" required placeholder="carlos@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="user-type">Rol del Usuario</label>
+                        <select id="user-type" required>
+                            <option value="Estudiante">Estudiante</option>
+                            <option value="Docente">Docente</option>
+                            <option value="Administrador">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="user-password">Contraseña</label>
+                        <input type="password" id="user-password" required placeholder="••••••••">
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-user-modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <div class="modal-overlay" id="qr-modal-overlay">
+        <div class="modal" style="max-width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h3>Credencial de Acceso QR</h3>
+                <button class="modal-close" id="btn-close-qr-modal">&times;</button>
+            </div>
+            <div style="background: white; padding: 1.5rem; border-radius: 12px; display: inline-block; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <img id="qr-credential-image" src="" alt="Credencial QR" style="display: block; max-width: 100%; height: auto; margin: 0 auto; width: 180px; height: 180px;">
+            </div>
+            <h4 id="qr-modal-name" style="font-size: 1.15rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.25rem;">-</h4>
+            <p id="qr-modal-code" style="color: var(--primary-color); font-weight: 700; font-family: monospace; font-size: 0.95rem; margin-bottom: 1.5rem;">-</p>
+            <button class="btn btn-secondary" id="btn-close-qr-modal-footer" style="width: 100%;">Cerrar Credencial</button>
+        </div>
+    </div>
+
+    
+    <div class="toast-container" id="toast-container"></div>
+
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <script src="app.js?v=3"></script>
+</body>
+
+</html>
