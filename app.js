@@ -1259,60 +1259,293 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Lógica del Simulador de RFID
+    // ==========================================
+    // LÓGICA DEL SIMULADOR RFID DINÁMICO
+    // ==========================================
+    const rfidCard = document.getElementById('rfid-card');
+    const rfidWorkspace = document.getElementById('rfid-workspace');
+    const rfidReader = document.getElementById('rfid-reader');
+    const rfidLed = document.getElementById('rfid-led');
+    const selectSimStudent = document.getElementById('rfid-sim-student');
+    const cardHolderName = document.getElementById('rfid-card-holder-name');
     const formRfidSimulate = document.getElementById('form-rfid-simulate');
-    
-    if (formRfidSimulate) {
-        formRfidSimulate.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const btnSubmit = document.getElementById('btn-submit-rfid');
-            const studentId = document.getElementById('rfid-sim-student').value;
-            const sede = document.getElementById('rfid-sim-sede').value;
-            const estado = document.getElementById('rfid-sim-state').value;
-            const deviceId = document.getElementById('rfid-sim-device').value.trim();
-            
-            if (!studentId) {
-                showToast('Selecciona un estudiante válido.', 'warning');
-                return;
+    const btnSubmitRfid = document.getElementById('btn-submit-rfid');
+
+    let rfidDoorTimer = null;
+
+    // Sincronizar el nombre en la tarjeta con el estudiante seleccionado
+    function updateCardHolder() {
+        if (selectSimStudent && selectSimStudent.selectedIndex >= 0) {
+            const text = selectSimStudent.options[selectSimStudent.selectedIndex].text;
+            // El formato es "Nombre Completo (Código)"
+            const name = text.split('(')[0].trim();
+            if (cardHolderName) {
+                cardHolderName.textContent = name || "ESTUDIANTE";
             }
+        } else if (cardHolderName) {
+            cardHolderName.textContent = "SELECCIONE...";
+        }
+    }
+
+    if (selectSimStudent) {
+        selectSimStudent.addEventListener('change', updateCardHolder);
+        // También observamos mutaciones porque la lista se carga asíncronamente
+        const observer = new MutationObserver(updateCardHolder);
+        observer.observe(selectSimStudent, { childList: true });
+    }
+
+    // Cambiar el estado visual de la puerta RFID
+    function triggerRfidDoorState(state, title, description, badgeText = 'PRESENTE') {
+        if (rfidDoorTimer) clearTimeout(rfidDoorTimer);
+
+        const rfidDoorPanel = document.getElementById('rfid-door-panel');
+        const rfidDoorBg = document.getElementById('rfid-door-bg');
+        const rfidWelcomeBadge = document.getElementById('rfid-welcome-badge');
+        const rfidWelcomeBadgeText = document.getElementById('rfid-welcome-badge-text');
+        const rfidDoorLockIcon = document.getElementById('rfid-door-lock-icon');
+        const rfidDoorStatusTitle = document.getElementById('rfid-door-status-title');
+        const rfidDoorStatusDesc = document.getElementById('rfid-door-status-desc');
+
+        if (!rfidDoorPanel) return;
+
+        // Resetear clases e iconos
+        rfidDoorPanel.classList.remove('door-opened', 'door-shaking');
+        rfidDoorBg.classList.remove('denied-bg');
+        rfidWelcomeBadge.classList.remove('active', 'denied-badge');
+        const badgeIcon = rfidWelcomeBadge.querySelector('i');
+        badgeIcon.className = "fa-solid fa-circle-check";
+
+        if (state === 'granted') {
+            rfidDoorPanel.classList.add('door-opened');
+            rfidWelcomeBadgeText.textContent = badgeText;
+            rfidWelcomeBadge.classList.add('active');
             
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = `<div class="loading-spinner" style="width:14px; height:14px; border-width:2px; display:inline-block; margin-right:5px;"></div> Registrando...`;
+            if (rfidDoorLockIcon) rfidDoorLockIcon.className = "fa-solid fa-lock-open";
+            rfidDoorStatusTitle.innerHTML = `<span style="color: var(--success-color)">${title}</span>`;
+            rfidDoorStatusDesc.textContent = description;
+        } else {
+            // Fuerza reflow para reiniciar la animación de sacudida
+            void rfidDoorPanel.offsetWidth;
+            rfidDoorPanel.classList.add('door-shaking');
             
-            const payload = {
-                id_usuario: parseInt(studentId),
-                sede: sede,
-                estado: estado,
-                dispositivo_rfid: deviceId || 'RFID-LECTOR-WEB-SIM'
-            };
+            rfidDoorBg.classList.add('denied-bg');
+            badgeIcon.className = "fa-solid fa-circle-xmark";
+            rfidWelcomeBadgeText.textContent = badgeText;
+            rfidWelcomeBadge.classList.add('denied-badge', 'active');
             
-            try {
-                const response = await fetch(`${backendUrl}/api/asistencias/post.php`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const resData = await response.json();
-                
-                if (response.ok || response.status === 201) {
-                    showToast('Asistencia RFID simulada y guardada correctamente.', 'success');
-                    loadAttendances('all'); // Recarga el historial de asistencias
-                    updateCounters(); // Actualiza los contadores del Dashboard
+            if (rfidDoorLockIcon) rfidDoorLockIcon.className = "fa-solid fa-lock";
+            rfidDoorStatusTitle.innerHTML = `<span style="color: var(--danger-color)">${title}</span>`;
+            rfidDoorStatusDesc.textContent = description;
+        }
+
+        // Cierre automático después de 4 segundos
+        rfidDoorTimer = setTimeout(() => {
+            rfidDoorPanel.classList.remove('door-opened', 'door-shaking');
+            rfidDoorBg.classList.remove('denied-bg');
+            rfidWelcomeBadge.classList.remove('active', 'denied-badge');
+            badgeIcon.className = "fa-solid fa-circle-check";
+            rfidWelcomeBadgeText.textContent = "PRESENTE";
+            
+            if (rfidDoorLockIcon) rfidDoorLockIcon.className = "fa-solid fa-lock";
+            rfidDoorStatusTitle.textContent = "PUERTA CERRADA";
+            rfidDoorStatusDesc.textContent = "Arrastre la tarjeta RFID al lector.";
+        }, 4000);
+    }
+
+    // Función para procesar y enviar el escaneo RFID
+    async function triggerRfidScan() {
+        const studentId = selectSimStudent.value;
+        const sede = document.getElementById('rfid-sim-sede').value;
+        const estado = document.getElementById('rfid-sim-state').value;
+        const deviceId = document.getElementById('rfid-sim-device').value.trim();
+
+        if (!studentId) {
+            showToast('Selecciona un estudiante válido antes de pasar la tarjeta.', 'warning');
+            if (rfidLed) {
+                rfidLed.style.backgroundColor = '#ef4444';
+                rfidLed.style.boxShadow = '0 0 8px #ef4444';
+                setTimeout(() => {
+                    rfidLed.style.backgroundColor = '';
+                    rfidLed.style.boxShadow = '';
+                }, 1500);
+            }
+            return;
+        }
+
+        // Feedback visual en el lector
+        if (rfidLed) rfidLed.classList.add('success');
+        if (rfidReader) rfidReader.classList.add('success');
+
+        if (btnSubmitRfid) {
+            btnSubmitRfid.disabled = true;
+            btnSubmitRfid.innerHTML = `<div class="loading-spinner" style="width:14px; height:14px; border-width:2px; display:inline-block; margin-right:5px;"></div> Registrando...`;
+        }
+
+        const payload = {
+            id_usuario: parseInt(studentId),
+            sede: sede,
+            estado: estado,
+            dispositivo_rfid: deviceId || 'RFID-LECTOR-WEB-SIM'
+        };
+
+        try {
+            const response = await fetch(`${backendUrl}/api/asistencias/post.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const resData = await response.json();
+            const studentName = selectSimStudent.options[selectSimStudent.selectedIndex].text.split('(')[0].trim();
+
+            if (response.ok || response.status === 201) {
+                showToast('Asistencia RFID registrada con éxito.', 'success');
+
+                // Si el estado es Presente o Tardanza se abre la puerta, si es Falta no
+                if (estado === 'Presente') {
+                    triggerRfidDoorState('granted', 'ACCESO COINCIDIDO', `¡Bienvenido/a, ${studentName}!`, 'PRESENTE');
+                } else if (estado === 'Tardanza') {
+                    triggerRfidDoorState('granted', 'ACCESO COINCIDIDO', `Tardanza registrada - ${studentName}`, 'TARDANZA');
                 } else {
-                    showToast(resData.message || 'Error al guardar la asistencia simulada.', 'danger');
+                    // Falta: Puerta cerrada vibrando
+                    triggerRfidDoorState('denied', 'ACCESO DENEGADO', `Falta registrada - ${studentName}`, 'FALTA');
                 }
-            } catch (error) {
-                console.error(error);
-                showToast('Error de red al conectar con el servidor backend.', 'danger');
-            } finally {
-                btnSubmit.disabled = false;
-                btnSubmit.innerHTML = `<i class="fa-solid fa-id-card"></i> Simular Lectura de Tarjeta`;
+
+                loadAttendances('all'); // Recarga el historial de asistencias
+                updateCounters(); // Actualiza los contadores del Dashboard
+            } else {
+                showToast(resData.message || 'Error al guardar la asistencia simulada.', 'danger');
+                triggerRfidDoorState('denied', 'FALLO REGISTRO', resData.message || 'Error en validación.');
             }
+        } catch (error) {
+            console.error(error);
+            showToast('Error de red al conectar con el servidor backend.', 'danger');
+            triggerRfidDoorState('denied', 'ERROR RED', 'No se pudo conectar con el servidor.');
+        } finally {
+            if (btnSubmitRfid) {
+                btnSubmitRfid.disabled = false;
+                btnSubmitRfid.innerHTML = `<i class="fa-solid fa-id-card"></i> Simular Lectura Manual (Clic)`;
+            }
+            // Restaurar LED después de 1.5 segundos
+            setTimeout(() => {
+                if (rfidLed) rfidLed.classList.remove('success');
+                if (rfidReader) rfidReader.classList.remove('success');
+            }, 1500);
+        }
+    }
+
+    // Drag-and-drop de la Tarjeta RFID
+    if (rfidCard && rfidWorkspace) {
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let cardLeft = 60; // Posición inicial X
+        let cardTop = 210; // Posición inicial Y
+        let hasScanned = false; // Bandera para evitar lecturas consecutivas sin alejar la tarjeta
+
+        rfidCard.addEventListener('mousedown', startDrag);
+        rfidCard.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+            isDragging = true;
+            const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+            
+            startX = clientX - cardLeft;
+            startY = clientY - cardTop;
+            
+            rfidCard.style.transition = 'none'; // Desactivar transiciones al arrastrar
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+            
+            if (e.type.startsWith('touch')) {
+                e.preventDefault();
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+            
+            let newLeft = clientX - startX;
+            let newTop = clientY - startY;
+            
+            // Límites de la zona de trabajo (con fallbacks si el contenedor tiene dimensiones colapsadas)
+            const workspaceWidth = rfidWorkspace.clientWidth || 250;
+            const workspaceHeight = rfidWorkspace.clientHeight || 320;
+            
+            const maxLeft = Math.max(0, workspaceWidth - rfidCard.clientWidth);
+            const maxTop = Math.max(0, workspaceHeight - rfidCard.clientHeight);
+            
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+            
+            cardLeft = newLeft;
+            cardTop = newTop;
+            
+            rfidCard.style.left = `${cardLeft}px`;
+            rfidCard.style.top = `${cardTop}px`;
+            
+            // Detección de colisión con el lector
+            if (rfidReader) {
+                const readerCenterX = rfidReader.offsetLeft + rfidReader.clientWidth / 2;
+                const readerCenterY = rfidReader.offsetTop + rfidReader.clientHeight / 2;
+                
+                const cardCenterX = cardLeft + rfidCard.clientWidth / 2;
+                const cardCenterY = cardTop + rfidCard.clientHeight / 2;
+                
+                const distance = Math.hypot(cardCenterX - readerCenterX, cardCenterY - readerCenterY);
+                
+                if (distance < 55) { // Radio de colisión
+                    if (!hasScanned) {
+                        hasScanned = true;
+                        rfidReader.classList.add('scanning');
+                        triggerRfidScan();
+                    }
+                } else if (distance > 90) {
+                    // Reiniciar la posibilidad de escanear cuando se aleja la tarjeta
+                    hasScanned = false;
+                    rfidReader.classList.remove('scanning');
+                }
+            }
+            
+            if (e.type.startsWith('touch')) {
+                e.preventDefault();
+            }
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
+            
+            // Regresar la tarjeta a su posición inicial con animación suave
+            rfidCard.style.transition = 'left 0.4s ease, top 0.4s ease';
+            cardLeft = 60;
+            cardTop = 210;
+            rfidCard.style.left = `${cardLeft}px`;
+            rfidCard.style.top = `${cardTop}px`;
+            
+            setTimeout(() => {
+                if (rfidReader) rfidReader.classList.remove('scanning');
+            }, 500);
+        }
+    }
+
+    // Lógica al enviar el formulario por botón
+    if (formRfidSimulate) {
+        formRfidSimulate.addEventListener('submit', (e) => {
+            e.preventDefault();
+            triggerRfidScan();
         });
     }
 
-    
     updateCounters();
 });

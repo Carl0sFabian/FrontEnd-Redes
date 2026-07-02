@@ -905,12 +905,163 @@ tr:hover td {
     margin-top: 1rem;
 }
 
-@media (max-width: 1024px) {
-    .dashboard-charts {
-        grid-template-columns: 1fr;
-    }
-    .full-width-chart {
-        grid-column: span 1;
-    }
+/* --- ESTILOS PARA EL SIMULADOR INTERACTIVO RFID --- */
+.rfid-workspace {
+    width: 250px;
+    height: 320px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    position: relative;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    touch-action: none; /* Evita gestos de scroll del navegador en móviles al arrastrar */
 }
+
+.rfid-reader {
+    width: 140px;
+    height: 140px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    position: absolute;
+    top: 30px;
+    left: 55px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.rfid-led {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+    position: absolute;
+    top: 15px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.rfid-led.success {
+    background: #10b981;
+    box-shadow: 0 0 12px #10b981;
+}
+
+.rfid-sensor-icon {
+    font-size: 2.2rem;
+    color: #475569;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    transition: color 0.3s, transform 0.3s;
+}
+
+.rfid-reader.scanning .rfid-sensor-icon {
+    color: #3b82f6;
+    transform: scale(1.05);
+}
+
+.rfid-reader.success {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25), inset 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.rfid-reader.success .rfid-sensor-icon {
+    color: #10b981;
+}
+
+.rfid-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #64748b;
+}
+
+.rfid-card {
+    width: 130px;
+    height: 80px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    cursor: grab;
+    user-select: none;
+    z-index: 10;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.rfid-card:active {
+    cursor: grabbing;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+}
+
+.rfid-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rfid-card-brand {
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rfid-card-wireless {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.65rem;
+}
+
+.rfid-card-chip {
+    width: 18px;
+    height: 14px;
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    border-radius: 2px;
+    opacity: 0.85;
+}
+
+.rfid-card-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.rfid-card-type {
+    font-size: 0.45rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.rfid-card-holder {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- SCROLL E HILO FIJO PARA TABLA HISTORIAL RFID --- */
+.rfid-history-table {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.rfid-history-table thead th {
+    position: sticky;
+    top: 0;
+    background: #0f172a; /* Fondo sólido oscuro para evitar traslapes al hacer scroll */
+    z-index: 5;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
 
