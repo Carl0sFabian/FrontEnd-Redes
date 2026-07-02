@@ -7,7 +7,7 @@
     <title>Edubridge - Panel de Control Educativo</title>
     <meta name="description"
         content="Dashboard premium de pruebas visuales para el backend de Edubridge. Gestión de usuarios, cursos, traducción de materiales y RFID.">
-    <link rel="stylesheet" href="index.css?v=7">
+    <link rel="stylesheet" href="index.css?v=11">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -20,29 +20,39 @@
             <span class="logo-text">Edubridge</span>
         </div>
         <nav class="menu-list">
-            <a class="menu-item active" data-view="view-dashboard">
+            <a class="menu-item active" data-view="view-dashboard" data-role="Admin,Docente,Estudiante">
                 <i class="fa-solid fa-chart-pie"></i> Inicio
             </a>
-            <a class="menu-item" data-view="view-users">
+            <a class="menu-item" data-view="view-users" data-role="Admin">
                 <i class="fa-solid fa-users"></i> Usuarios
             </a>
-            <a class="menu-item" data-view="view-courses">
+            <a class="menu-item" data-view="view-courses" data-role="Admin,Docente">
                 <i class="fa-solid fa-graduation-cap"></i> Cursos
             </a>
-            <a class="menu-item" data-view="view-materials">
+            <a class="menu-item" data-view="view-materials" data-role="Admin,Docente,Estudiante">
                 <i class="fa-solid fa-book-open"></i> Materiales (Traductor)
             </a>
-            <a class="menu-item" data-view="view-qr-door">
+            <a class="menu-item" data-view="view-qr-door" data-role="Admin,Docente,Estudiante">
                 <i class="fa-solid fa-door-open"></i> Lector QR (Puerta)
             </a>
-            <a class="menu-item" data-view="view-attendance">
+            <a class="menu-item" data-view="view-attendance" data-role="Admin,Docente,Estudiante">
                 <i class="fa-solid fa-id-card"></i> Asistencias (RFID)
             </a>
-            <a class="menu-item" data-view="view-performance">
+            <a class="menu-item" data-view="view-performance" data-role="Admin,Docente,Estudiante">
                 <i class="fa-solid fa-chart-line"></i> Rendimiento
+            </a>
+            <a class="menu-item" data-view="view-profile" data-role="Docente,Estudiante">
+                <i class="fa-solid fa-user-gear"></i> Mi Perfil
             </a>
         </nav>
         <div class="sidebar-footer">
+            <div class="logged-user-info" id="logged-user-info" style="display: none; margin-bottom: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; text-align: left;">
+                <p style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.15rem;" id="logged-user-name">-</p>
+                <p style="font-size: 0.75rem; color: var(--accent-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" id="logged-user-role">-</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-logout" style="width: 100%; display: none; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: var(--danger-color); font-weight: 600; margin-bottom: 0.75rem; height: 32px; font-size: 0.8rem;">
+                <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+            </button>
             <p>Edubridge Admin v1.0</p>
             <p>&copy; 2026</p>
         </div>
@@ -101,9 +111,9 @@
             </div>
 
 
-            <!-- Sección de Gráficos del Dashboard -->
+            
             <div class="dashboard-charts">
-                <div class="chart-panel">
+                <div class="chart-panel" id="panel-chart-users">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-chart-pie" style="color: #3b82f6; margin-right: 0.5rem;"></i>
                             Distribución de Usuarios</h2>
@@ -113,7 +123,7 @@
                     </div>
                 </div>
 
-                <div class="chart-panel">
+                <div class="chart-panel" id="panel-chart-attendance">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-building-user" style="color: #a855f7; margin-right: 0.5rem;"></i>
                             Asistencias por Sede</h2>
@@ -123,7 +133,7 @@
                     </div>
                 </div>
 
-                <div class="chart-panel full-width-chart">
+                <div class="chart-panel full-width-chart" id="panel-chart-materials">
                     <div class="panel-header">
                         <h2><i class="fa-solid fa-book-open-reader" style="color: #10b981; margin-right: 0.5rem;"></i>
                             Materiales por Curso</h2>
@@ -271,6 +281,28 @@
                     </table>
                 </div>
             </div>
+
+            <div class="glass-panel" id="panel-course-enrollments" style="margin-top: 2rem;">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-user-graduate" style="color: var(--accent-color); margin-right: 0.5rem;"></i>Estudiantes Inscritos en Cursos</h2>
+                </div>
+                <div class="table-container">
+                    <table id="table-course-enrollments">
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Estudiante</th>
+                                <th>Código Alumno</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Cierre</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-course-enrollments">
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
 
@@ -370,13 +402,13 @@
         </section>
 
         <section id="view-attendance" class="app-view">
-            <!-- 1. Simulador de RFID a todo lo ancho (arriba) -->
+            
             <div class="glass-panel" style="margin-bottom: 1.5rem;">
                 <div class="panel-header">
                     <h2>Simulador de Lector RFID Interactivo</h2>
                 </div>
                 <form id="form-rfid-simulate">
-                    <!-- Dropdowns en una sola línea responsive -->
+                    
                     <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
                         <div class="form-group">
                             <label for="rfid-sim-student">Estudiante / Usuario</label>
@@ -407,10 +439,10 @@
                         </div>
                     </div>
 
-                    <!-- Zona de Interacción (Lector + Tarjeta + Puerta) en una fila centrada -->
+                    
                     <div class="rfid-interactive-area" style="display: flex; gap: 4rem; margin-top: 2rem; flex-wrap: wrap; justify-content: center; align-items: center;">
                         
-                        <!-- Panel del Lector y Tarjeta -->
+                        
                         <div class="rfid-scanner-zone" style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
                             <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; font-weight: 500;">
                                 <i class="fa-solid fa-hand-pointer"></i> Arrastra la tarjeta al lector para registrar asistencia.
@@ -441,31 +473,31 @@
                             </div>
                         </div>
                         
-                        <!-- Panel de la Puerta 3D -->
+                        
                         <div class="rfid-door-zone" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
                             <div class="door-frame" style="margin: 0 auto; transform: scale(1.0); transform-origin: center;">
-                                <!-- Fondo detrás de la puerta -->
+                                
                                 <div class="door-background" id="rfid-door-bg">
                                     <div class="welcome-badge" id="rfid-welcome-badge">
                                         <i class="fa-solid fa-circle-check"></i>
                                         <span id="rfid-welcome-badge-text">PRESENTE</span>
                                     </div>
                                 </div>
-                                <!-- Panel de la puerta -->
+                                
                                 <div class="door-panel" id="rfid-door-panel">
-                                    <!-- Ventana de la puerta -->
+                                    
                                     <div class="door-window">
                                         <i class="fa-solid fa-graduation-cap"
                                             style="font-size: 2.5rem; color: rgba(255,255,255,0.15);"></i>
                                     </div>
-                                    <!-- Cerradura y Candado -->
+                                    
                                     <div class="door-lock-container">
                                         <i id="rfid-door-lock-icon" class="fa-solid fa-lock"></i>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Información del Estado de Acceso -->
+                            
                             <div style="text-align: center; margin-top: 1rem; width: 100%; max-width: 320px;">
                                 <h2 id="rfid-door-status-title"
                                     style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem; letter-spacing: 0.05em; color: var(--text-main);">
@@ -485,7 +517,7 @@
                 </form>
             </div>
 
-            <!-- 2. Tabla de historial RFID (abajo) -->
+            
             <div class="glass-panel">
                 <div class="panel-header">
                     <h2>Filtros e Historial RFID</h2>
@@ -635,30 +667,30 @@
                 <div class="glass-panel" style="justify-content: center; align-items: center; min-height: 480px;">
                     <div id="door-container"
                         style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-                        <!-- Marco de la puerta 3D -->
+                        
                         <div class="door-frame">
-                            <!-- Fondo detrás de la puerta -->
+                            
                             <div class="door-background" id="door-bg">
                                 <div class="welcome-badge" id="welcome-badge">
                                     <i class="fa-solid fa-circle-check"></i>
                                     <span id="welcome-badge-text">PRESENTE</span>
                                 </div>
                             </div>
-                            <!-- Panel de la puerta -->
+                            
                             <div class="door-panel" id="door-panel">
-                                <!-- Ventana de la puerta -->
+                                
                                 <div class="door-window">
                                     <i class="fa-solid fa-graduation-cap"
                                         style="font-size: 2.5rem; color: rgba(255,255,255,0.15);"></i>
                                 </div>
-                                <!-- Cerradura y Candado -->
+                                
                                 <div class="door-lock-container" id="door-lock-container">
                                     <i id="door-lock-icon" class="fa-solid fa-lock"></i>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Información del Estado de Acceso -->
+                        
                         <div id="door-status-info"
                             style="text-align: center; margin-top: 1rem; width: 100%; max-width: 320px;">
                             <h2 id="door-status-title"
@@ -698,6 +730,37 @@
                 </div>
             </div>
         </section>
+
+        
+        <section id="view-profile" class="app-view">
+            <div style="display: flex; justify-content: center; align-items: center; min-height: 400px; padding: 2rem 0;">
+                <div class="glass-panel" style="max-width: 450px; width: 100%; text-align: center; padding: 2.5rem 2rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.4);">
+                    <div style="margin-bottom: 1.5rem; position: relative; display: inline-block;">
+                        <div style="width: 80px; height: 80px; background: var(--primary-gradient); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 700; color: white; margin: 0 auto; box-shadow: var(--shadow-glow);" id="profile-avatar-char">-</div>
+                    </div>
+                    
+                    <h2 id="profile-name" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text-main);">-</h2>
+                    <p id="profile-role" style="font-size: 0.85rem; color: var(--accent-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.5rem;">-</p>
+                    
+                    <div style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 1.25rem 0; margin-bottom: 1.75rem; text-align: left; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">Código de Cuenta:</span>
+                            <span style="font-weight: 600; font-family: monospace; color: var(--text-main);" id="profile-code">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">Correo Electrónico:</span>
+                            <span style="font-weight: 600; color: var(--text-main);" id="profile-email">-</span>
+                        </div>
+                    </div>
+                    
+                    <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--text-muted);">Credencial QR de Acceso</h3>
+                    <div style="background: white; padding: 1.25rem; border-radius: 12px; display: inline-block; margin-bottom: 0.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                        <img id="profile-qr-image" src="" alt="Código QR de Acceso" style="display: block; width: 160px; height: 160px; margin: 0 auto;">
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Presenta este código ante el lector QR de la puerta para registrar tu acceso.</p>
+                </div>
+            </div>
+        </section>
     </main>
 
 
@@ -726,7 +789,7 @@
                         <select id="user-type" required>
                             <option value="Estudiante">Estudiante</option>
                             <option value="Docente">Docente</option>
-                            <option value="Administrador">Administrador</option>
+                            <option value="Admin">Administrador</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -765,12 +828,46 @@
     </div>
 
 
+    
+    <div class="login-overlay active" id="login-overlay">
+        <div class="login-card">
+            <div class="login-logo-container" style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                <div class="logo-icon" style="width: 38px; height: 38px; background: var(--primary-gradient); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.4rem; box-shadow: var(--shadow-glow);">E</div>
+                <span class="logo-text" style="font-size: 1.8rem; font-weight: 800; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Edubridge</span>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 0.25rem;">Panel de Control</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.75rem;">Ingresa tus credenciales para acceder a la plataforma.</p>
+            
+            <form id="form-login">
+                <div class="form-group" style="text-align: left; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label for="login-username" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Usuario (Correo o Código)</label>
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <i class="fa-solid fa-user" style="position: absolute; left: 1rem; color: var(--text-muted); font-size: 0.95rem;"></i>
+                        <input type="text" id="login-username" required placeholder="correo@example.com o Código" style="width: 100%; padding: 0.85rem 1rem 0.85rem 2.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; outline: none; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                    </div>
+                </div>
+                
+                <div class="form-group" style="text-align: left; margin-bottom: 1.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label for="login-password" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Contraseña</label>
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <i class="fa-solid fa-lock" style="position: absolute; left: 1rem; color: var(--text-muted); font-size: 0.95rem;"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••" style="width: 100%; padding: 0.85rem 1rem 0.85rem 2.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; outline: none; transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; padding: 0.85rem; font-size: 0.95rem; cursor: pointer; border-radius: 8px; border: none; box-shadow: var(--shadow-glow);">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 
 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=5"></script>
 </body>
 
 </html>

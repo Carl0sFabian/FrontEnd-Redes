@@ -33,6 +33,227 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     
+    
+    
+    let currentUser = null;
+
+    function initSession() {
+        const savedUserJson = localStorage.getItem('edubridge_logged_user');
+        if (savedUserJson) {
+            currentUser = JSON.parse(savedUserJson);
+            applyUserRoleAndUI();
+        } else {
+            showLoginScreen();
+        }
+    }
+
+    function showLoginScreen() {
+        currentUser = null;
+        localStorage.removeItem('edubridge_logged_user');
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) loginOverlay.classList.add('active');
+        
+        const loggedUserInfo = document.getElementById('logged-user-info');
+        if (loggedUserInfo) loggedUserInfo.style.display = 'none';
+        
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) btnLogout.style.display = 'none';
+    }
+
+    function applyUserRoleAndUI() {
+        if (!currentUser) return;
+        
+        
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) loginOverlay.classList.remove('active');
+
+        
+        const loggedUserInfo = document.getElementById('logged-user-info');
+        const loggedUserName = document.getElementById('logged-user-name');
+        const loggedUserRole = document.getElementById('logged-user-role');
+        const btnLogout = document.getElementById('btn-logout');
+
+        if (loggedUserInfo) loggedUserInfo.style.display = 'block';
+        if (loggedUserName) loggedUserName.textContent = currentUser.nombre_completo;
+        if (loggedUserRole) loggedUserRole.textContent = currentUser.tipo;
+        if (btnLogout) btnLogout.style.display = 'flex';
+
+        
+        const userRole = currentUser.tipo; 
+        menuItems.forEach(item => {
+            const allowedRoles = item.getAttribute('data-role') || '';
+            const rolesArray = allowedRoles.split(',').map(r => r.trim());
+            if (rolesArray.includes(userRole)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        
+        const uploadMaterialForm = document.getElementById('form-upload-material');
+        const registerGradeForm = document.getElementById('form-performance');
+        const formCreateCourse = document.getElementById('form-create-course');
+        const formEnrollStudent = document.getElementById('form-enroll-student');
+
+        if (userRole === 'Estudiante') {
+            if (uploadMaterialForm) {
+                const parentPanel = uploadMaterialForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+            if (registerGradeForm) {
+                const parentPanel = registerGradeForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+            if (formCreateCourse) {
+                const parentPanel = formCreateCourse.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+            if (formEnrollStudent) {
+                const parentPanel = formEnrollStudent.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+
+            
+            const panelUsers = document.getElementById('panel-chart-users');
+            const panelAttendance = document.getElementById('panel-chart-attendance');
+            if (panelUsers) panelUsers.style.display = 'none';
+            if (panelAttendance) panelAttendance.style.display = 'none';
+        } else if (userRole === 'Docente') {
+            if (uploadMaterialForm) {
+                const parentPanel = uploadMaterialForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+            if (registerGradeForm) {
+                const parentPanel = registerGradeForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+            if (formCreateCourse) {
+                const parentPanel = formCreateCourse.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+            if (formEnrollStudent) {
+                const parentPanel = formEnrollStudent.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.add('role-hidden');
+            }
+
+            const panelUsers = document.getElementById('panel-chart-users');
+            const panelAttendance = document.getElementById('panel-chart-attendance');
+            if (panelUsers) panelUsers.style.display = 'block';
+            if (panelAttendance) panelAttendance.style.display = 'block';
+        } else { 
+            if (uploadMaterialForm) {
+                const parentPanel = uploadMaterialForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+            if (registerGradeForm) {
+                const parentPanel = registerGradeForm.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+            if (formCreateCourse) {
+                const parentPanel = formCreateCourse.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+            if (formEnrollStudent) {
+                const parentPanel = formEnrollStudent.closest('.glass-panel');
+                if (parentPanel) parentPanel.classList.remove('role-hidden');
+            }
+
+            const panelUsers = document.getElementById('panel-chart-users');
+            const panelAttendance = document.getElementById('panel-chart-attendance');
+            if (panelUsers) panelUsers.style.display = 'block';
+            if (panelAttendance) panelAttendance.style.display = 'block';
+        }
+
+        
+        if (userRole !== 'Admin') {
+            const profileAvatarChar = document.getElementById('profile-avatar-char');
+            const profileName = document.getElementById('profile-name');
+            const profileRole = document.getElementById('profile-role');
+            const profileCode = document.getElementById('profile-code');
+            const profileEmail = document.getElementById('profile-email');
+            const profileQrImage = document.getElementById('profile-qr-image');
+
+            if (profileAvatarChar) {
+                profileAvatarChar.textContent = currentUser.nombre_completo ? currentUser.nombre_completo.charAt(0).toUpperCase() : '-';
+            }
+            if (profileName) profileName.textContent = currentUser.nombre_completo;
+            if (profileRole) profileRole.textContent = currentUser.tipo;
+            if (profileCode) profileCode.textContent = currentUser.codigo;
+            if (profileEmail) profileEmail.textContent = currentUser.correo;
+            
+            if (profileQrImage) {
+                const qrData = `EDUBRIDGE_QR:${currentUser.id}`;
+                profileQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+            }
+        }
+
+        
+        const firstVisibleMenuItem = Array.from(menuItems).find(item => item.style.display !== 'none');
+        if (firstVisibleMenuItem) {
+            firstVisibleMenuItem.click();
+        }
+    }
+
+    
+    const formLogin = document.getElementById('form-login');
+    if (formLogin) {
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            const submitBtn = formLogin.querySelector('button[type="submit"]');
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                showToast('Ingresa usuario y contraseña.', 'warning');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<div class="loading-spinner" style="width:14px; height:14px; border-width:2px; display:inline-block; margin-right:5px;"></div> Verificando...`;
+
+            try {
+                const response = await fetch(`${backendUrl}/api/usuarios/login.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const resData = await response.json();
+
+                if (response.ok && resData.success) {
+                    showToast(`¡Bienvenido, ${resData.user.nombre_completo}!`, 'success');
+                    localStorage.setItem('edubridge_logged_user', JSON.stringify(resData.user));
+                    currentUser = resData.user;
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                    applyUserRoleAndUI();
+                } else {
+                    showToast(resData.message || 'Credenciales inválidas.', 'danger');
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('Error de red al intentar iniciar sesión.', 'danger');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión`;
+            }
+        });
+    }
+
+    
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            showToast('Sesión cerrada correctamente.', 'warning');
+            showLoginScreen();
+        });
+    }
+
+    
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -103,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Connection testing removed from button, keeping testConnection utility if needed
+    
 
     async function testConnection() {
         showToast('Probando conexión con el backend...', 'warning');
@@ -140,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const attendances = resAttendance.ok ? await resAttendance.json() : [];
             document.getElementById('count-attendance').textContent = Array.isArray(attendances) ? attendances.length : 0;
 
-            // Draw and refresh dashboard charts
+            
             initDashboardCharts(users, courses, materials, attendances);
         } catch (e) {
             console.warn("No se pudieron cargar todos los contadores rápidos: " + e.message);
@@ -152,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartSedes) chartSedes.destroy();
         if (chartMaterials) chartMaterials.destroy();
 
-        // 1. User Distribution
+        
         const userTypes = { 'Estudiante': 0, 'Docente': 0, 'Admin': 0 };
         if (Array.isArray(users)) {
             users.forEach(u => {
@@ -189,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 2. Attendance by Sede
+        
         const sedes = {};
         if (Array.isArray(attendances)) {
             attendances.forEach(a => {
@@ -225,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 3. Materials by Course
+        
         const courseMaterials = {};
         const courseMap = {};
         if (Array.isArray(courses)) {
@@ -367,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td><code style="color: var(--primary-color)">${user.codigo}</code></td>
                         <td style="font-weight: 500">${user.nombre_completo}</td>
                         <td>${user.correo}</td>
-                        <td><span class="badge ${user.tipo === 'Administrador' ? 'badge-red' : user.tipo === 'Docente' ? 'badge-purple' : 'badge-blue'}">${user.tipo}</span></td>
+                        <td><span class="badge ${user.tipo === 'Admin' ? 'badge-red' : user.tipo === 'Docente' ? 'badge-purple' : 'badge-blue'}">${user.tipo}</span></td>
                         <td>${coursesHtml}</td>
                         <td>${locationHtml}</td>
                         <td style="font-size: 0.8rem; color: var(--text-muted)">${user.fecha_creacion || '-'}</td>
@@ -477,6 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await fillDropdowns();
         
         loadCourses();
+        loadEnrollments();
     }
 
     async function fillDropdowns() {
@@ -526,12 +748,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error("No se encontraron cursos.");
             const data = await response.json();
 
-            if (data.length === 0) {
-                tbodyCourses.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fa-solid fa-graduation-cap"></i><p>No hay cursos registrados.</p></td></tr>`;
+            let filteredCourses = data;
+            if (currentUser && currentUser.tipo === 'Docente') {
+                filteredCourses = data.filter(c => c.id_docente == currentUser.id);
+            }
+
+            if (filteredCourses.length === 0) {
+                tbodyCourses.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fa-solid fa-graduation-cap"></i><p>No tienes cursos asignados.</p></td></tr>`;
                 return;
             }
 
-            tbodyCourses.innerHTML = data.map(course => `
+            tbodyCourses.innerHTML = filteredCourses.map(course => `
                 <tr>
                     <td>${course.id}</td>
                     <td style="font-weight: 600">${course.nombre}</td>
@@ -543,6 +770,46 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         } catch (e) {
             tbodyCourses.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Error al cargar la lista de cursos.</p></td></tr>`;
+        }
+    }
+
+    async function loadEnrollments() {
+        const tbodyEnrollments = document.getElementById('tbody-course-enrollments');
+        if (!tbodyEnrollments) return;
+
+        tbodyEnrollments.innerHTML = `<tr><td colspan="5" style="text-align:center;"><div class="loading-spinner"></div></td></tr>`;
+        try {
+            const response = await fetch(`${backendUrl}/api/inscripciones/get.php`);
+            if (!response.ok) throw new Error("Sin inscripciones");
+            const data = await response.json();
+
+            let filteredEnrollments = data;
+            if (currentUser && currentUser.tipo === 'Docente') {
+                const resCourses = await fetch(`${backendUrl}/api/cursos/get.php`);
+                const allCourses = resCourses.ok ? await resCourses.json() : [];
+                const teacherCourseIds = allCourses.filter(c => c.id_docente == currentUser.id).map(c => c.id);
+                
+                filteredEnrollments = data.filter(ins => teacherCourseIds.includes(ins.id_curso));
+            }
+
+            if (filteredEnrollments.length === 0) {
+                tbodyEnrollments.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-user-graduate"></i><p>No hay alumnos matriculados en tus cursos.</p></td></tr>`;
+                return;
+            }
+
+            tbodyEnrollments.innerHTML = filteredEnrollments.map(ins => {
+                return `
+                    <tr>
+                        <td style="font-weight: 600">${ins.curso_nombre || `Curso ID: ${ins.id_curso}`}</td>
+                        <td style="font-weight: 500">${ins.estudiante_nombre || `Estudiante ID: ${ins.id_estudiante}`}</td>
+                        <td><code style="color: var(--primary-color)">${ins.estudiante_codigo || 'N/A'}</code></td>
+                        <td>${ins.fecha_inicio || '-'}</td>
+                        <td>${ins.fecha_fin || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (e) {
+            tbodyEnrollments.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Error al cargar la lista de estudiantes inscritos.</p></td></tr>`;
         }
     }
 
@@ -618,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadMaterials() {
         tbodyMaterials.innerHTML = `<tr><td colspan="7" style="text-align:center;"><div class="loading-spinner"></div></td></tr>`;
         try {
-            // 1. Obtener materiales de la base de datos
+            
             let dbMaterials = [];
             try {
                 const resDb = await fetch(`${backendUrl}/api/materiales/get.php`);
@@ -627,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error al obtener materiales de la DB:", e);
             }
 
-            // 2. Obtener archivos reales de Google Drive
+            
             let driveFiles = [];
             try {
                 const resDrive = await fetch(`${backendUrl}/api/materiales/list_drive.php`);
@@ -641,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Extractor de ID de archivo Drive auxiliar
+            
             function getDriveFileId(url) {
                 if (!url) return null;
                 const m1 = url.match(/file\/d\/([a-zA-Z0-9-_]+)/);
@@ -654,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const renderedRows = [];
             const matchedDbIds = new Set();
 
-            // Mapear los archivos que están en Google Drive
+            
             driveFiles.forEach(file => {
                 const dbMat = dbMaterials.find(m => getDriveFileId(m.url_archivo) === file.id);
                 
@@ -708,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `);
             });
 
-            // Mostrar también registros huérfanos de la DB (que no se encontraron en Drive)
+            
             dbMaterials.forEach(dbMat => {
                 if (matchedDbIds.has(dbMat.id)) return;
 
@@ -740,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tbodyMaterials.innerHTML = renderedRows.join('');
 
-            // Event Listeners para botones de eliminación
+            
             document.querySelectorAll('.delete-material-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -852,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnApplyFilter = document.getElementById('btn-apply-filter');
     const tbodyAttendance = document.getElementById('tbody-attendance');
 
-    // Manejador del cambio de tipo de filtro para adaptar el campo de valor
+    
     selectFilterType.addEventListener('change', () => {
         const type = selectFilterType.value;
         inputFilterValue.value = '';
@@ -957,7 +1224,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${backendUrl}/api/rendimiento/get.php`);
             if (!response.ok) throw new Error("Sin datos de rendimiento");
-            const data = await response.json();
+            let data = await response.json();
+
+            
+            if (currentUser && currentUser.tipo === 'Estudiante') {
+                data = data.filter(perf => perf.id_estudiante == currentUser.id);
+            }
 
             if (data.length === 0) {
                 tbodyPerformance.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-chart-line"></i><p>No hay reportes de rendimiento escolar registrados.</p></td></tr>`;
@@ -1162,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function triggerDoorState(state, title, description) {
         if (doorTimer) clearTimeout(doorTimer);
 
-        // Reset classes and icons
+        
         doorPanel.classList.remove('door-opened', 'door-shaking');
         doorBg.classList.remove('denied-bg');
         welcomeBadge.classList.remove('active', 'denied-badge');
@@ -1170,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeIcon.className = "fa-solid fa-circle-check";
 
         if (state === 'granted') {
-            // Open door panel and show green badge
+            
             doorPanel.classList.add('door-opened');
             welcomeBadgeText.textContent = "PRESENTE";
             welcomeBadge.classList.add('active');
@@ -1179,8 +1451,8 @@ document.addEventListener('DOMContentLoaded', () => {
             doorStatusTitle.innerHTML = `<span style="color: var(--success-color)">${title}</span>`;
             doorStatusDesc.textContent = description;
         } else {
-            // Shake door closed and show red badge behind it
-            void doorPanel.offsetWidth; // Trigger reflow to restart animation
+            
+            void doorPanel.offsetWidth; 
             doorPanel.classList.add('door-shaking');
             
             doorBg.classList.add('denied-bg');
@@ -1193,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
             doorStatusDesc.textContent = description;
         }
 
-        // Auto close and lock after 4 seconds
+        
         doorTimer = setTimeout(() => {
             doorPanel.classList.remove('door-opened', 'door-shaking');
             doorBg.classList.remove('denied-bg');
@@ -1235,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    // Carga la lista de estudiantes para el simulador RFID
+    
     async function loadRfidSimStudents() {
         const selectSimStudent = document.getElementById('rfid-sim-student');
         if (!selectSimStudent) return;
@@ -1259,9 +1531,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ==========================================
-    // LÓGICA DEL SIMULADOR RFID DINÁMICO
-    // ==========================================
+    
+    
+    
     const rfidCard = document.getElementById('rfid-card');
     const rfidWorkspace = document.getElementById('rfid-workspace');
     const rfidReader = document.getElementById('rfid-reader');
@@ -1273,11 +1545,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let rfidDoorTimer = null;
 
-    // Sincronizar el nombre en la tarjeta con el estudiante seleccionado
+    
     function updateCardHolder() {
         if (selectSimStudent && selectSimStudent.selectedIndex >= 0) {
             const text = selectSimStudent.options[selectSimStudent.selectedIndex].text;
-            // El formato es "Nombre Completo (Código)"
+            
             const name = text.split('(')[0].trim();
             if (cardHolderName) {
                 cardHolderName.textContent = name || "ESTUDIANTE";
@@ -1289,12 +1561,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (selectSimStudent) {
         selectSimStudent.addEventListener('change', updateCardHolder);
-        // También observamos mutaciones porque la lista se carga asíncronamente
+        
         const observer = new MutationObserver(updateCardHolder);
         observer.observe(selectSimStudent, { childList: true });
     }
 
-    // Cambiar el estado visual de la puerta RFID
+    
     function triggerRfidDoorState(state, title, description, badgeText = 'PRESENTE') {
         if (rfidDoorTimer) clearTimeout(rfidDoorTimer);
 
@@ -1308,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!rfidDoorPanel) return;
 
-        // Resetear clases e iconos
+        
         rfidDoorPanel.classList.remove('door-opened', 'door-shaking');
         rfidDoorBg.classList.remove('denied-bg');
         rfidWelcomeBadge.classList.remove('active', 'denied-badge');
@@ -1324,7 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rfidDoorStatusTitle.innerHTML = `<span style="color: var(--success-color)">${title}</span>`;
             rfidDoorStatusDesc.textContent = description;
         } else {
-            // Fuerza reflow para reiniciar la animación de sacudida
+            
             void rfidDoorPanel.offsetWidth;
             rfidDoorPanel.classList.add('door-shaking');
             
@@ -1338,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rfidDoorStatusDesc.textContent = description;
         }
 
-        // Cierre automático después de 4 segundos
+        
         rfidDoorTimer = setTimeout(() => {
             rfidDoorPanel.classList.remove('door-opened', 'door-shaking');
             rfidDoorBg.classList.remove('denied-bg');
@@ -1352,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4000);
     }
 
-    // Función para procesar y enviar el escaneo RFID
+    
     async function triggerRfidScan() {
         const studentId = selectSimStudent.value;
         const sede = document.getElementById('rfid-sim-sede').value;
@@ -1372,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Feedback visual en el lector
+        
         if (rfidLed) rfidLed.classList.add('success');
         if (rfidReader) rfidReader.classList.add('success');
 
@@ -1401,18 +1673,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok || response.status === 201) {
                 showToast('Asistencia RFID registrada con éxito.', 'success');
 
-                // Si el estado es Presente o Tardanza se abre la puerta, si es Falta no
+                
                 if (estado === 'Presente') {
                     triggerRfidDoorState('granted', 'ACCESO COINCIDIDO', `¡Bienvenido/a, ${studentName}!`, 'PRESENTE');
                 } else if (estado === 'Tardanza') {
                     triggerRfidDoorState('granted', 'ACCESO COINCIDIDO', `Tardanza registrada - ${studentName}`, 'TARDANZA');
                 } else {
-                    // Falta: Puerta cerrada vibrando
+                    
                     triggerRfidDoorState('denied', 'ACCESO DENEGADO', `Falta registrada - ${studentName}`, 'FALTA');
                 }
 
-                loadAttendances('all'); // Recarga el historial de asistencias
-                updateCounters(); // Actualiza los contadores del Dashboard
+                loadAttendances('all'); 
+                updateCounters(); 
             } else {
                 showToast(resData.message || 'Error al guardar la asistencia simulada.', 'danger');
                 triggerRfidDoorState('denied', 'FALLO REGISTRO', resData.message || 'Error en validación.');
@@ -1426,7 +1698,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnSubmitRfid.disabled = false;
                 btnSubmitRfid.innerHTML = `<i class="fa-solid fa-id-card"></i> Simular Lectura Manual (Clic)`;
             }
-            // Restaurar LED después de 1.5 segundos
+            
             setTimeout(() => {
                 if (rfidLed) rfidLed.classList.remove('success');
                 if (rfidReader) rfidReader.classList.remove('success');
@@ -1434,14 +1706,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Drag-and-drop de la Tarjeta RFID
+    
     if (rfidCard && rfidWorkspace) {
         let isDragging = false;
         let startX = 0;
         let startY = 0;
-        let cardLeft = 60; // Posición inicial X
-        let cardTop = 210; // Posición inicial Y
-        let hasScanned = false; // Bandera para evitar lecturas consecutivas sin alejar la tarjeta
+        let cardLeft = 60; 
+        let cardTop = 210; 
+        let hasScanned = false; 
 
         rfidCard.addEventListener('mousedown', startDrag);
         rfidCard.addEventListener('touchstart', startDrag, { passive: false });
@@ -1454,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startX = clientX - cardLeft;
             startY = clientY - cardTop;
             
-            rfidCard.style.transition = 'none'; // Desactivar transiciones al arrastrar
+            rfidCard.style.transition = 'none'; 
             
             document.addEventListener('mousemove', drag);
             document.addEventListener('touchmove', drag, { passive: false });
@@ -1475,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let newLeft = clientX - startX;
             let newTop = clientY - startY;
             
-            // Límites de la zona de trabajo (con fallbacks si el contenedor tiene dimensiones colapsadas)
+            
             const workspaceWidth = rfidWorkspace.clientWidth || 250;
             const workspaceHeight = rfidWorkspace.clientHeight || 320;
             
@@ -1491,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rfidCard.style.left = `${cardLeft}px`;
             rfidCard.style.top = `${cardTop}px`;
             
-            // Detección de colisión con el lector
+            
             if (rfidReader) {
                 const readerCenterX = rfidReader.offsetLeft + rfidReader.clientWidth / 2;
                 const readerCenterY = rfidReader.offsetTop + rfidReader.clientHeight / 2;
@@ -1501,14 +1773,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const distance = Math.hypot(cardCenterX - readerCenterX, cardCenterY - readerCenterY);
                 
-                if (distance < 55) { // Radio de colisión
+                if (distance < 55) { 
                     if (!hasScanned) {
                         hasScanned = true;
                         rfidReader.classList.add('scanning');
                         triggerRfidScan();
                     }
                 } else if (distance > 90) {
-                    // Reiniciar la posibilidad de escanear cuando se aleja la tarjeta
+                    
                     hasScanned = false;
                     rfidReader.classList.remove('scanning');
                 }
@@ -1526,7 +1798,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.removeEventListener('mouseup', stopDrag);
             document.removeEventListener('touchend', stopDrag);
             
-            // Regresar la tarjeta a su posición inicial con animación suave
+            
             rfidCard.style.transition = 'left 0.4s ease, top 0.4s ease';
             cardLeft = 60;
             cardTop = 210;
@@ -1539,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Lógica al enviar el formulario por botón
+    
     if (formRfidSimulate) {
         formRfidSimulate.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -1547,5 +1819,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    updateCounters();
+    initSession();
 });
